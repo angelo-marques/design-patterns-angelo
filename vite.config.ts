@@ -151,6 +151,7 @@ function vitePluginManusDebugCollector(): Plugin {
 }
 
 const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+const basePath = process.env.VITE_BASE_PATH || "/";
 
 function normalizeBasePath(basePath: string | undefined): string {
   if (!basePath || basePath === "/") return "/";
