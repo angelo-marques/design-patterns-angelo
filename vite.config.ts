@@ -172,7 +172,13 @@ function normalizeBasePath(basePath: string | undefined): string {
 const basePath = normalizeBasePath(process.env.VITE_BASE_PATH);
 
 export default defineConfig({
-  base: basePath,
+  base: (() => {
+    const configuredBasePath = process.env.VITE_BASE_PATH;
+    if (!configuredBasePath || configuredBasePath === "/") return "/";
+
+    const withLeadingSlash = configuredBasePath.startsWith("/") ? configuredBasePath : `/${configuredBasePath}`;
+    return withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`;
+  })(),
   plugins,
   resolve: {
     alias: {
