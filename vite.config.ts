@@ -153,6 +153,13 @@ function vitePluginManusDebugCollector(): Plugin {
 const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
 
 export default defineConfig({
+  base: (() => {
+    const configuredBasePath = process.env.VITE_BASE_PATH;
+    if (!configuredBasePath || configuredBasePath === "/") return "/";
+
+    const withLeadingSlash = configuredBasePath.startsWith("/") ? configuredBasePath : `/${configuredBasePath}`;
+    return withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`;
+  })(),
   plugins,
   resolve: {
     alias: {
