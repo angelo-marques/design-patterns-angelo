@@ -162,6 +162,15 @@ function normalizeBasePath(basePath: string | undefined): string {
 
 const basePath = normalizeBasePath(process.env.VITE_BASE_PATH);
 
+function normalizeBasePath(basePath: string | undefined): string {
+  if (!basePath || basePath === "/") return "/";
+
+  const withLeadingSlash = basePath.startsWith("/") ? basePath : `/${basePath}`;
+  return withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`;
+}
+
+const basePath = normalizeBasePath(process.env.VITE_BASE_PATH);
+
 export default defineConfig({
   base: basePath,
   plugins,
