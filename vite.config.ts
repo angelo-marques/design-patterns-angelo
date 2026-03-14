@@ -151,17 +151,6 @@ function vitePluginManusDebugCollector(): Plugin {
 }
 
 const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
-const basePath = process.env.VITE_BASE_PATH || "/";
-
-function normalizeBasePath(basePath: string | undefined): string {
-  if (!basePath || basePath === "/") return "/";
-
-  const withLeadingSlash = basePath.startsWith("/") ? basePath : `/${basePath}`;
-  return withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`;
-}
-
-const basePath = normalizeBasePath(process.env.VITE_BASE_PATH);
-
 function normalizeBasePath(basePath: string | undefined): string {
   if (!basePath || basePath === "/") return "/";
 
@@ -189,13 +178,12 @@ export default defineConfig({
   },
   envDir: path.resolve(import.meta.dirname),
   root: path.resolve(import.meta.dirname, "client"),
+  publicDir: path.resolve(import.meta.dirname, "client", "public"),
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
   },
   server: {
-    port: 3000,
-    strictPort: false, // Will find next available port if 3000 is busy
     host: true,
     allowedHosts: [
       ".manuspre.computer",
