@@ -1,6 +1,6 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, files, customPatterns, InsertFile, InsertCustomPattern } from "../drizzle/schema";
+import { InsertUser, users, files, customPatterns, InsertFile, InsertCustomPattern, communityPosts, communityComments, communityLikes, InsertCommunityPost, InsertCommunityComment, InsertCommunityLike } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -153,4 +153,143 @@ export async function updatePatternVisibility(patternId: number, userId: number,
   await db.update(customPatterns)
     .set({ isPublic })
     .where(and(eq(customPatterns.id, patternId), eq(customPatterns.userId, userId)));
+}
+
+
+// Community posts queries
+export async function getCommunityPosts(limit: number = 20, offset: number = 0) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(communityPosts).orderBy(desc(communityPosts.createdAt)).limit(limit).offset(offset);
+}
+
+export async function getCommunityPostsByPattern(patternId: string, limit: number = 10) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(communityPosts)
+    .where(eq(communityPosts.patternId, patternId))
+    .orderBy(desc(communityPosts.createdAt))
+    .limit(limit);
+}
+
+export async function getCommunityPostById(postId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(communityPosts).where(eq(communityPosts.id, postId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function createCommunityPost(post: InsertCommunityPost): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(communityPosts).values(post);
+  return result.insertId;
+}
+
+export async function updateCommunityPost(postId: number, userId: number, updates: Partial<InsertCommunityPost>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(communityPosts)
+    .set(updates)
+    .where(and(eq(communityPosts.id, postId), eq(communityPosts.userId, userId)));
+}
+
+export async function deleteCommunityPost(postId: number, userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(communityPosts).where(and(eq(communityPosts.id, postId), eq(communityPosts.userId, userId)));
+}
+
+export async function incrementPostLikes(postId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const post = await getCommunityPostById(postId);
+  if (post) {
+    await db.update(communityPosts)
+      .set({ likes: (post.likes || 0) + 1 })
+      .where(eq(communityPosts.id, postId));
+  }
+}
+
+// Community comments queries
+export async function getCommunityComments(postId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(communityComments)
+    .where(eq(communityComments.postId, postId))
+    .orderBy(desc(communityComments.createdAt));
+}
+
+export async function createCommunityComment(comment: InsertCommunityComment): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(communityComments).values(comment);
+  
+  // Increment comment count on post
+  const post = await getCommunityPostById(comment.postId);
+  if (post) {
+    await db.update(communityPosts)
+      .set({ commentCount: (post.commentCount || 0) + 1 })
+      .where(eq(communityPosts.id, comment.postId));
+  }
+  
+  return result.insertId;
+}
+
+export async function deleteCommunityComment(commentId: number, userId: number, postId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Decrement comment count on post
+  const post = await getCommunityPostById(postId);
+  if (post) {
+    await db.update(communityPosts)
+      .set({ commentCount: Math.max(0, (post.commentCount || 0) - 1) })
+      .where(eq(communityPosts.id, postId));
+  }
+  
+  await db.delete(communityComments)
+    .where(and(eq(communityComments.id, commentId), eq(communityComments.userId, userId)));
+}
+
+// Community likes queries
+export async function addPostLike(userId: number, postId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Check if already liked
+  const existing = await db.select().from(communityLikes)
+    .where(and(eq(communityLikes.userId, userId), eq(communityLikes.postId, postId)))
+    .limit(1);
+  
+  if (existing.length === 0) {
+    await db.insert(communityLikes).values({ userId, postId });
+    await incrementPostLikes(postId);
+  }
+}
+
+export async function removePostLike(userId: number, postId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.delete(communityLikes)
+    .where(and(eq(communityLikes.userId, userId), eq(communityLikes.postId, postId)));
+  
+  const post = await getCommunityPostById(postId);
+  if (post) {
+    await db.update(communityPosts)
+      .set({ likes: Math.max(0, (post.likes || 0) - 1) })
+      .where(eq(communityPosts.id, postId));
+  }
+}
+
+export async function hasUserLikedPost(userId: number, postId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  
+  const result = await db.select().from(communityLikes)
+    .where(and(eq(communityLikes.userId, userId), eq(communityLikes.postId, postId)))
+    .limit(1);
+  
+  return result.length > 0;
 }

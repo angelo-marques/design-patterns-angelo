@@ -68,3 +68,57 @@ export const customPatterns = mysqlTable("customPatterns", {
 
 export type CustomPattern = typeof customPatterns.$inferSelect;
 export type InsertCustomPattern = typeof customPatterns.$inferInsert;
+
+/**
+ * Community posts table
+ * Allows users to share pattern discussions and insights
+ */
+export const communityPosts = mysqlTable("communityPosts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  patternId: varchar("patternId", { length: 100 }), // Reference to pattern name (e.g., "Singleton")
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  codeSnippet: text("codeSnippet"), // Optional code example
+  language: varchar("language", { length: 50 }), // java, csharp, python, ruby
+  tags: varchar("tags", { length: 500 }), // comma-separated tags
+  likes: int("likes").default(0),
+  commentCount: int("commentCount").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CommunityPost = typeof communityPosts.$inferSelect;
+export type InsertCommunityPost = typeof communityPosts.$inferInsert;
+
+/**
+ * Community comments table
+ * Allows users to discuss posts
+ */
+export const communityComments = mysqlTable("communityComments", {
+  id: int("id").autoincrement().primaryKey(),
+  postId: int("postId").notNull(),
+  userId: int("userId").notNull(),
+  content: text("content").notNull(),
+  likes: int("likes").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CommunityComment = typeof communityComments.$inferSelect;
+export type InsertCommunityComment = typeof communityComments.$inferInsert;
+
+/**
+ * Community likes table
+ * Tracks user likes on posts and comments
+ */
+export const communityLikes = mysqlTable("communityLikes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  postId: int("postId"), // null if liking a comment
+  commentId: int("commentId"), // null if liking a post
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CommunityLike = typeof communityLikes.$inferSelect;
+export type InsertCommunityLike = typeof communityLikes.$inferInsert;

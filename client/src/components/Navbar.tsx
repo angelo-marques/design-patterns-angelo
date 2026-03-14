@@ -23,13 +23,18 @@ export default function Navbar() {
   const navLinks = [
     { label: t.nav.home, href: "#home" },
     { label: t.nav.patterns, href: "#patterns" },
+    { label: "Comunidade", href: "/community" },
     { label: t.nav.about, href: "#about" },
     { label: t.nav.contact, href: "#contact" },
   ];
 
   const scrollTo = (href: string) => {
-    const el = document.querySelector(href);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+    if (href.startsWith("/")) {
+      window.location.href = href;
+    } else {
+      const el = document.querySelector(href);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }
     setMobileOpen(false);
   };
 

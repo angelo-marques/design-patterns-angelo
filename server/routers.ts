@@ -90,6 +90,94 @@ export const appRouter = router({
       .input(z.object({ patternId: z.number(), isPublic: z.boolean() }))
       .mutation(({ ctx, input }) => db.updatePatternVisibility(input.patternId, ctx.user.id, input.isPublic ? 1 : 0)),
   }),
+
+  community: router({
+    // Posts
+    listPosts: publicProcedure
+      .input(z.object({
+        limit: z.number().default(20),
+        offset: z.number().default(0),
+      }))
+      .query(({ input }) => db.getCommunityPosts(input.limit, input.offset)),
+    
+    getPostsByPattern: publicProcedure
+      .input(z.object({ patternId: z.string() }))
+      .query(({ input }) => db.getCommunityPostsByPattern(input.patternId)),
+    
+    getPost: publicProcedure
+      .input(z.object({ postId: z.number() }))
+      .query(({ input }) => db.getCommunityPostById(input.postId)),
+    
+    createPost: protectedProcedure
+      .input(z.object({
+        patternId: z.string().optional(),
+        title: z.string().min(3),
+        content: z.string().min(10),
+        codeSnippet: z.string().optional(),
+        language: z.string().optional(),
+        tags: z.string().optional(),
+      }))
+      .mutation(({ ctx, input }) => db.createCommunityPost({
+        userId: ctx.user.id,
+        patternId: input.patternId,
+        title: input.title,
+        content: input.content,
+        codeSnippet: input.codeSnippet,
+        language: input.language,
+        tags: input.tags,
+      })),
+    
+    updatePost: protectedProcedure
+      .input(z.object({
+        postId: z.number(),
+        title: z.string().optional(),
+        content: z.string().optional(),
+        codeSnippet: z.string().optional(),
+        language: z.string().optional(),
+        tags: z.string().optional(),
+      }))
+      .mutation(({ ctx, input }) => {
+        const { postId, ...updates } = input;
+        return db.updateCommunityPost(postId, ctx.user.id, updates);
+      }),
+    
+    deletePost: protectedProcedure
+      .input(z.object({ postId: z.number() }))
+      .mutation(({ ctx, input }) => db.deleteCommunityPost(input.postId, ctx.user.id)),
+    
+    // Comments
+    getComments: publicProcedure
+      .input(z.object({ postId: z.number() }))
+      .query(({ input }) => db.getCommunityComments(input.postId)),
+    
+    createComment: protectedProcedure
+      .input(z.object({
+        postId: z.number(),
+        content: z.string().min(1),
+      }))
+      .mutation(({ ctx, input }) => db.createCommunityComment({
+        postId: input.postId,
+        userId: ctx.user.id,
+        content: input.content,
+      })),
+    
+    deleteComment: protectedProcedure
+      .input(z.object({ commentId: z.number(), postId: z.number() }))
+      .mutation(({ ctx, input }) => db.deleteCommunityComment(input.commentId, ctx.user.id, input.postId)),
+    
+    // Likes
+    likePost: protectedProcedure
+      .input(z.object({ postId: z.number() }))
+      .mutation(({ ctx, input }) => db.addPostLike(ctx.user.id, input.postId)),
+    
+    unlikePost: protectedProcedure
+      .input(z.object({ postId: z.number() }))
+      .mutation(({ ctx, input }) => db.removePostLike(ctx.user.id, input.postId)),
+    
+    hasLiked: protectedProcedure
+      .input(z.object({ postId: z.number() }))
+      .query(({ ctx, input }) => db.hasUserLikedPost(ctx.user.id, input.postId)),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
