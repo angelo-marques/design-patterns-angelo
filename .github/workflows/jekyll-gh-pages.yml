@@ -37,12 +37,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Guard against duplicated Vite base declarations
+      - name: Guard against legacy/duplicated Vite base declarations
         run: |
-          BASE_PATH_DECLARATIONS=$(rg -n "const basePath\s*=|function normalizeBasePath\s*\(" vite.config.ts | wc -l)
-          if [ "$BASE_PATH_DECLARATIONS" -gt "2" ]; then
-            echo "Found duplicated basePath/normalizeBasePath declarations in vite.config.ts"
-            rg -n "const basePath\s*=|function normalizeBasePath\s*\(" vite.config.ts
+          if rg -n "const basePath\s*=|function normalizeBasePath\s*\(" vite.config.ts; then
+            echo "Found legacy or duplicated basePath/normalizeBasePath declarations in vite.config.ts"
             exit 1
           fi
 
