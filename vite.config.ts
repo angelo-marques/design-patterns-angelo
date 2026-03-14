@@ -161,7 +161,6 @@ function normalizeBasePath(basePath: string | undefined): string {
 const basePath = normalizeBasePath(process.env.VITE_BASE_PATH);
 
 export default defineConfig({
-  base: basePath,
   plugins,
   resolve: {
     alias: {
