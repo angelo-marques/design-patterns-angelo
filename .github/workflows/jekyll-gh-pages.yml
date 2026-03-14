@@ -25,33 +25,28 @@ jobs:
         id: pages
         uses: actions/configure-pages@v5
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
+          cache: npm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Guard against legacy/duplicated Vite base declarations
-        run: pnpm run build -- --configuration production --base-href "/${{ github.event.repository.name }}/"
+        run: npm install
 
       - name: Build website
-        run: pnpm vite build
-        env:
-          VITE_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: npm run build
+
+      - name: Copy public folder to dist
+        run: mkdir -p dist && cp -r public/* dist/
 
       - name: Add SPA fallback for GitHub Pages
-        run: cp dist/public/index.html dist/public/404.html
+        run: cp dist/index.html dist/404.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist/public
+          path: dist
 
   deploy:
     environment:
