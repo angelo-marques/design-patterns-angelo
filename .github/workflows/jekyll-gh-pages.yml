@@ -26,7 +26,7 @@ jobs:
           cache: 'pnpm'
       
       - name: Install dependencies
-        run: pnpm install --lockfile=false
+        run: npm install pnpm --global
       
       - name: Run tests
         run: pnpm test
